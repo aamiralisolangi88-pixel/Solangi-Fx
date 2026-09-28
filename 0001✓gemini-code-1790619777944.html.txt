@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solangi FX - ARK Fx Master Terminal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: #0B0E14;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+
+        /* 3D Glassmorphism & Neon Glow Effects */
+        .glass-panel {
+            background: rgba(18, 24, 38, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(26, 34, 52, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px) scale(1.01);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.3);
+        }
+
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .neon-glow-gold {
+            box-shadow: 0 0 25px rgba(234, 179, 8, 0.4);
+        }
+
+        .neon-text-green {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        .neon-text-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0E14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38BDF8;
+        }
+
+        /* Spin Wheel Animation */
+        #wheelCanvas {
+            transition: transform 4s cubic-bezier(0.15, 0.99, 0.18, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            
+            <!-- Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-amber-400 p-[2px] neon-glow-cyan">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-bolt text-amber-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-300 bg-clip-text text-transparent">
+                        SOLANGI FX
+                    </h1>
+                    <p class="text-[10px] text-slate-400 tracking-widest font-semibold uppercase">ARK Fx Master Terminal</p>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-3">
+                
+                <!-- Founder/VIP Unlimited Toggle -->
+                <button id="founderToggleBtn" onclick="toggleFounderMode()" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center gap-2 hover:bg-amber-500/20 transition-all">
+                    <i class="fa-solid fa-crown text-amber-400"></i>
+                    <span>Founder Mode: <span id="founderStatus" class="text-rose-400">OFF</span></span>
+                </button>
+
+                <!-- Free Daily Spin Button -->
+                <button onclick="openModal('spinModal')" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-2 hover:opacity-90 shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-arrows-spin animate-spin"></i>
+                    <span class="hidden sm:inline">Daily Free Spin</span>
+                </button>
+
+                <!-- Buy Package Button -->
+                <button onclick="openModal('paymentModal')" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-black text-xs font-black uppercase tracking-wider hover:brightness-110 neon-glow-cyan">
+                    Upgrade / Buy
+                </button>
+
+                <!-- User Profile / License Badge -->
+                <div id="licenseBadge" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="userLicenseType">Free Pass</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN TERMINAL DASHBOARD -->
+    <main class="max-w-7xl mx-auto w-full px-4 lg:px-8 py-6 flex-grow space-y-6">
+
+        <!-- STATS & ANNOUNCEMENT BANNER -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-6 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
+                <div class="space-y-1 text-center md:text-left">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold">
+                        <i class="fa-solid fa-circle-dot text-[8px] animate-ping"></i> High Precision Multi-Asset Signals
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Live Institutional Analytics Terminal</h2>
+                    <p class="text-xs text-slate-400 max-w-xl">
+                        Select any Forex, Crypto, or Stock asset below to compute multi-indicator algorithmic BUY/SELL signals in real-time.
+                    </p>
+                </div>
+                <div class="grid grid-cols-3 gap-3 w-full md:w-auto text-center">
+                    <div class="glass-card p-3 rounded-xl min-w-[90px]">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Accuracy</p>
+                        <p class="text-lg font-extrabold text-emerald-400">89.4%</p>
+                    </div>
+                    <div class="glass-card p-3 rounded-xl min-w-[90px]">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Assets</p>
+                        <p class="text-lg font-extrabold text-cyan-400">60 Pairs</p>
+                    </div>
+                    <div class="glass-card p-3 rounded-xl min-w-[90px]">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Speed</p>
+                        <p class="text-lg font-extrabold text-amber-400">&lt; 0.05s</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION (FOREX | CRYPTO | STOCKS) -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+                <button onclick="switchTab('forex')" id="tab-forex" class="tab-btn px-5 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-cyan-500 text-black shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-globe mr-1.5"></i> Forex (20)
+                </button>
+                <button onclick="switchTab('crypto')" id="tab-crypto" class="tab-btn px-5 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-slate-800 text-slate-400 hover:text-white">
+                    <i class="fa-brands fa-bitcoin mr-1.5"></i> Crypto (20)
+                </button>
+                <button onclick="switchTab('stocks')" id="tab-stocks" class="tab-btn px-5 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-slate-800 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-chart-line mr-1.5"></i> Stocks (20)
+                </button>
+            </div>
+
+            <!-- Search input -->
+            <div class="relative hidden sm:block w-48 lg:w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                <input type="text" id="assetSearch" oninput="filterAssets()" placeholder="Search asset..." class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-all">
+            </div>
+        </div>
+
+        <!-- ASSETS GRID CONTAINER (20 + 20 + 20 Cards) -->
+        <div id="assetsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Dynamic Asset Cards Rendered by JS -->
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800/80 glass-panel py-4 px-4 text-center text-xs text-slate-500">
+        <p>&copy; 2026 Solangi FX - ARK Fx Master Terminal. All rights reserved. Professional Trading Software.</p>
+    </footer>
+
+    <!-- MODAL 1: ADVANCED CHART & SIGNAL GENERATOR MODAL -->
+    <div id="chartModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 hidden">
+        <div class="glass-panel w-full max-w-5xl rounded-2xl border border-slate-700/80 overflow-hidden flex flex-col max-h-[92vh]">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+                <div class="flex items-center gap-3">
+                    <span id="modalSymbolBadge" class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+                    <h3 id="modalSymbolTitle" class="text-lg font-extrabold text-white">EUR/USD</h3>
+                    <span id="modalAssetPrice" class="text-sm font-mono text-cyan-400">1.08450</span>
+                </div>
+                <button onclick="closeModal('chartModal')" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Grid -->
+            <div class="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Column: Canvas Chart & Timeframe Controls -->
+                <div class="lg:col-span-2 space-y-4">
+                    
+                    <!-- Timeframe Selector -->
+                    <div class="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-[11px] font-bold">
+                        <span class="text-slate-500 px-2 uppercase text-[10px]">TF:</span>
+                        <button onclick="setTimeframe('5s')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">5s</button>
+                        <button onclick="setTimeframe('10s')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">10s</button>
+                        <button onclick="setTimeframe('30s')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">30s</button>
+                        <button onclick="setTimeframe('1M')" class="tf-btn px-2.5 py-1 rounded-lg bg-cyan-500 text-black">1M</button>
+                        <button onclick="setTimeframe('5M')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">5M</button>
+                        <button onclick="setTimeframe('15M')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">15M</button>
+                        <button onclick="setTimeframe('1H')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400">1H</button>
+                    </div>
+
+                    <!-- Canvas Interactive Chart Container -->
+                    <div class="relative w-full h-[320px] bg-slate-950 rounded-xl border border-slate-800 p-2 overflow-hidden flex flex-col justify-between">
+                        <canvas id="tradingChart" class="w-full h-full"></canvas>
+                    </div>
+
+                    <!-- Indicator Toggle Badges -->
+                    <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/80">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-check text-emerald-400"></i> RSI (14)</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-check text-emerald-400"></i> MACD (12,26)</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-check text-emerald-400"></i> Bollinger Bands</span>
+                        </div>
+                        <span class="text-[10px] text-cyan-400">Live Tick Feed</span>
+                    </div>
+                </div>
+
+                <!-- Right Column: AI Signal Calculation Box -->
+                <div class="space-y-4">
+                    <div class="glass-card p-4 rounded-xl border border-cyan-500/30 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Signal Box</span>
+                            <span id="signalTimeframeBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">TF: 1M</span>
+                        </div>
+
+                        <!-- Computed Signal Banner -->
+                        <div id="signalOutputBox" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-2">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Calculated Signal</p>
+                            <h2 id="signalResultText" class="text-3xl font-black text-emerald-400 neon-text-green tracking-widest">STRONG BUY</h2>
+                            <div class="flex justify-center gap-4 text-xs font-mono pt-2 border-t border-slate-900">
+                                <div><span class="text-slate-500">Accuracy:</span> <span id="signalAccuracy" class="text-amber-400 font-bold">92.8%</span></div>
+                                <div><span class="text-slate-500">Confidence:</span> <span id="signalConfidence" class="text-cyan-400 font-bold">HIGH</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Entry / SL / TP Metrics -->
+                        <div class="space-y-2 font-mono text-xs">
+                            <div class="flex justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                                <span class="text-slate-400">Entry Price:</span>
+                                <span id="signalEntry" class="text-white font-bold">--</span>
+                            </div>
+                            <div class="flex justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                <span class="text-emerald-400">Take Profit (TP):</span>
+                                <span id="signalTP" class="text-emerald-400 font-bold">--</span>
+                            </div>
+                            <div class="flex justify-between p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                                <span class="text-rose-400">Stop Loss (SL):</span>
+                                <span id="signalSL" class="text-rose-400 font-bold">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Generate Fresh Signal Button -->
+                        <button onclick="recalculateSignal()" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black text-xs uppercase tracking-wider hover:opacity-90 neon-glow-cyan">
+                            <i class="fa-solid fa-rotate mr-2"></i> Recalculate Signal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: GAMIFIED DAILY FREE SPIN WHEEL -->
+    <div id="spinModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 hidden">
+        <div class="glass-panel w-full max-w-md rounded-2xl border border-purple-500/30 p-6 text-center relative space-y-6">
+            <button onclick="closeModal('spinModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div>
+                <h3 class="text-xl font-extrabold text-white">Daily Free Spin Wheel</h3>
+                <p class="text-xs text-slate-400 mt-1">Spin once every 24 hours to win a FREE 12-Hour Full License Access!</p>
+            </div>
+
+            <!-- Spin Wheel Visual Canvas -->
+            <div class="relative w-64 h-64 mx-auto flex items-center justify-center">
+                <!-- Pointer -->
+                <div class="absolute -top-3 z-20 text-amber-400 text-2xl drop-shadow-md">
+                    <i class="fa-solid fa-caret-down"></i>
+                </div>
+                <!-- Wheel Canvas -->
+                <canvas id="wheelCanvas" width="250" height="250" class="rounded-full border-4 border-purple-500/50 shadow-2xl shadow-purple-500/20"></canvas>
+            </div>
+
+            <div class="space-y-3">
+                <button id="spinBtn" onclick="spinWheel()" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm uppercase tracking-wider hover:opacity-90 neon-glow-gold">
+                    SPIN NOW
+                </button>
+                <div id="spinResult" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-300 font-semibold"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: PAYMENT GATEWAY & SUBSCRIPTION MODAL -->
+    <div id="paymentModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 hidden">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl border border-cyan-500/30 p-6 relative space-y-6 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('paymentModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div>
+                <h3 class="text-2xl font-extrabold text-white">Select Subscription Package</h3>
+                <p class="text-xs text-slate-400 mt-1">Unlock 100% unlimited high-accuracy signals with automatic key delivery.</p>
+            </div>
+
+            <!-- Pricing Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Weekly Package -->
+                <div onclick="selectPackage('weekly')" id="pkg-weekly" class="glass-card p-4 rounded-xl border-2 border-cyan-500 cursor-pointer relative space-y-2">
+                    <span class="absolute top-3 right-3 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400">Popular</span>
+                    <h4 class="text-base font-bold text-white">Weekly Pass</h4>
+                    <p class="text-2xl font-black text-cyan-400">$5 <span class="text-xs text-slate-400 font-normal">/ 7 Days</span></p>
+                    <ul class="text-xs text-slate-300 space-y-1 pt-2 border-t border-slate-800">
+                        <li><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i> All 60 Assets Unlocked</li>
+                        <li><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i> 05s - 2H Timeframes</li>
+                    </ul>
+                </div>
+
+                <!-- Monthly Package -->
+                <div onclick="selectPackage('monthly')" id="pkg-monthly" class="glass-card p-4 rounded-xl border-2 border-slate-800 hover:border-amber-500 cursor-pointer relative space-y-2">
+                    <span class="absolute top-3 right-3 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">Best Value</span>
+                    <h4 class="text-base font-bold text-white">Monthly Pass</h4>
+                    <p class="text-2xl font-black text-amber-400">$20 <span class="text-xs text-slate-400 font-normal">/ 30 Days</span></p>
+                    <ul class="text-xs text-slate-300 space-y-1 pt-2 border-t border-slate-800">
+                        <li><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i> VIP Signal Signals</li>
+                        <li><i class="fa-solid fa-check text-emerald-400 mr-1.5"></i> 24/7 AI Agent Priority</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Payment Methods Grid -->
+            <div class="space-y-3">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Choose Payment Gateway:</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold">
+                    <button onclick="selectGateway('JazzCash')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">JazzCash</button>
+                    <button onclick="selectGateway('EasyPaisa')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">EasyPaisa</button>
+                    <button onclick="selectGateway('SadaPay')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">SadaPay</button>
+                    <button onclick="selectGateway('PayPal')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">PayPal</button>
+                    <button onclick="selectGateway('Payoneer')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">Payoneer</button>
+                    <button onclick="selectGateway('Visa / Mastercard')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center">Visa Card</button>
+                    <button onclick="selectGateway('Bank Transfer')" class="gw-btn p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-center col-span-2">Local Bank</button>
+                </div>
+            </div>
+
+            <!-- Submit Payment Button -->
+            <button onclick="processPayment()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-black font-extrabold text-xs uppercase tracking-wider hover:opacity-90 shadow-lg shadow-emerald-500/20">
+                Complete Payment & Get License Key
+            </button>
+        </div>
+    </div>
+
+    <!-- FLOATING AI AGENT ASSISTANT CHAT WIDGET -->
+    <div id="aiChatWidget" class="fixed bottom-5 right-5 z-40">
+        <!-- Chat Trigger Toggle -->
+        <button onclick="toggleAiChat()" class="w-14 h-14 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 text-black font-bold flex items-center justify-center shadow-2xl neon-glow-cyan hover:scale-105 transition-all">
+            <i class="fa-solid fa-robot text-xl text-black"></i>
+        </button>
+
+        <!-- Chat Panel Window -->
+        <div id="aiChatWindow" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 glass-panel rounded-2xl border border-cyan-500/30 overflow-hidden shadow-2xl flex flex-col h-[420px]">
+            <!-- Chat Header -->
+            <div class="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-bold text-white">Solangi AI Support Agent</span>
+                </div>
+                <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Chat Messages Log -->
+            <div id="chatLog" class="p-4 flex-grow overflow-y-auto space-y-3 text-xs">
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-slate-300">
+                    Hello! I am your <strong>Solangi FX AI Assistant</strong>. Ask me anything about signal interpretation, asset trends, or licensing!
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <form onsubmit="handleAiQuery(event)" class="p-2 border-t border-slate-800 bg-slate-950 flex gap-2">
+                <input type="text" id="aiInput" placeholder="Ask AI agent..." class="flex-grow bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-black font-bold text-xs"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULL JAVASCRIPT LOGIC -->
+    <script>
+        /* DATASETS: 20 Forex, 20 Crypto, 20 Stocks */
+        const ASSETS = {
+            forex: [
+                { symbol: "EUR/USD", price: 1.0852, change: 0.24 }, { symbol: "GBP/USD", price: 1.2640, change: -0.12 },
+                { symbol: "USD/JPY", price: 154.20, change: 0.45 }, { symbol: "XAU/USD", price: 2380.50, change: 1.15 },
+                { symbol: "GBP/JPY", price: 194.80, change: 0.32 }, { symbol: "EUR/JPY", price: 167.30, change: 0.18 },
+                { symbol: "AUD/USD", price: 0.6650, change: -0.40 }, { symbol: "USD/CAD", price: 1.3680, change: 0.05 },
+                { symbol: "USD/CHF", price: 0.9020, change: -0.22 }, { symbol: "NZD/USD", price: 0.6120, change: 0.10 },
+                { symbol: "EUR/GBP", price: 0.8580, change: 0.08 }, { symbol: "EUR/AUD", price: 1.6310, change: 0.55 },
+                { symbol: "GBP/AUD", price: 1.9005, change: -0.30 }, { symbol: "XAG/USD", price: 30.45, change: 2.10 },
+                { symbol: "GBP/CAD", price: 1.7290, change: -0.05 }, { symbol: "EUR/CAD", price: 1.4840, change: 0.14 },
+                { symbol: "AUD/JPY", price: 102.50, change: 0.62 }, { symbol: "NZD/JPY", price: 94.30, change: -0.18 },
+                { symbol: "USD/SGD", price: 1.3510, change: 0.02 }, { symbol: "EUR/NZD", price: 1.7730, change: 0.28 }
+            ],
+            crypto: [
+                { symbol: "BTC/USD", price: 67450.00, change: 3.40 }, { symbol: "ETH/USD", price: 3520.00, change: 2.15 },
+                { symbol: "BNB/USD", price: 585.00, change: 1.05 }, { symbol: "XRP/USD", price: 0.5240, change: -1.20 },
+                { symbol: "SOL/USD", price: 178.50, change: 5.80 }, { symbol: "TRX/USD", price: 0.1220, change: 0.40 },
+                { symbol: "DOGE/USD", price: 0.1580, change: 4.10 }, { symbol: "LINK/USD", price: 16.80, change: -0.85 },
+                { symbol: "ADA/USD", price: 0.4850, change: 0.95 }, { symbol: "BCH/USD", price: 480.00, change: 1.80 },
+                { symbol: "XLM/USD", price: 0.1080, change: -0.50 }, { symbol: "UNI/USD", price: 7.60, change: 2.30 },
+                { symbol: "AVAX/USD", price: 36.20, change: 3.90 }, { symbol: "DOT/USD", price: 7.20, change: -1.10 },
+                { symbol: "MATIC/USD", price: 0.7250, change: 0.35 }, { symbol: "LTC/USD", price: 84.50, change: 1.25 },
+                { symbol: "SHIB/USD", price: 0.000025, change: 6.20 }, { symbol: "PEPE/USD", price: 0.000014, change: 8.50 },
+                { symbol: "NEAR/USD", price: 7.80, change: 4.30 }, { symbol: "ARB/USD", price: 1.12, change: -2.10 }
+            ],
+            stocks: [
+                { symbol: "AAPL", price: 189.30, change: 1.12 }, { symbol: "TSLA", price: 177.50, change: -2.45 },
+                { symbol: "NVDA", price: 948.00, change: 4.20 }, { symbol: "MSFT", price: 428.50, change: 0.85 },
+                { symbol: "AMZN", price: 183.20, change: 1.40 }, { symbol: "GOOGL", price: 176.80, change: -0.30 },
+                { symbol: "META", price: 475.00, change: 2.10 }, { symbol: "NFLX", price: 620.00, change: -1.15 },
+                { symbol: "AMD", price: 165.40, change: 3.05 }, { symbol: "INTC", price: 30.80, change: -0.90 },
+                { symbol: "BA", price: 182.00, change: 0.40 }, { symbol: "NKE", price: 92.50, change: -0.60 },
+                { symbol: "DIS", price: 104.20, change: 0.15 }, { symbol: "PYPL", price: 64.80, change: 1.05 },
+                { symbol: "COIN", price: 215.00, change: 5.40 }, { symbol: "MSTR", price: 1540.00, change: 6.80 },
+                { symbol: "SPY", price: 528.00, change: 0.45 }, { symbol: "QQQ", price: 456.00, change: 0.75 },
+                { symbol: "BABA", price: 86.20, change: -1.80 }, { symbol: "UBER", price: 68.40, change: 2.25 }
+            ]
+        };
+
+        /* STATE VARIABLES */
+        let currentTab = 'forex';
+        let activeSymbol = 'EUR/USD';
+        let activeTimeframe = '1M';
+        let selectedPackage = 'weekly';
+        let selectedGateway = 'JazzCash';
+        let isFounder = false;
+
+        /* INITIALIZATION */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAssetCards(ASSETS[currentTab]);
+            drawSpinWheel();
+            setInterval(simulatePriceUpdates, 2000); // Live price tick simulator
+        });
+
+        /* TAB SWITCHING */
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-5 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-slate-800 text-slate-400 hover:text-white";
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.className = "tab-btn px-5 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-cyan-500 text-black shadow-lg shadow-cyan-500/20";
+            
+            renderAssetCards(ASSETS[tab]);
+        }
+
+        /* RENDER ASSET CARDS */
+        function renderAssetCards(data) {
+            const grid = document.getElementById('assetsGrid');
+            grid.innerHTML = '';
+
+            data.forEach(item => {
+                const isPositive = item.change >= 0;
+                const card = document.createElement('div');
+                card.className = "glass-card p-4 rounded-xl cursor-pointer flex flex-col justify-between space-y-3";
+                card.onclick = () => openChartModal(item.symbol, item.price);
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-sm text-white">${item.symbol}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                            ${isPositive ? '+' : ''}${item.change}%
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                        <span class="text-xs text-slate-400">Live Price</span>
+                        <span class="font-mono font-bold text-sm text-cyan-300 asset-price-val">${item.price}</span>
+                    </div>
+                    <button class="w-full py-1.5 rounded-lg bg-slate-900 hover:bg-cyan-500 hover:text-black border border-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-[10px]"></i> Get Signal
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* FILTER SEARCH */
+        function filterAssets() {
+            const query = document.getElementById('assetSearch').value.toLowerCase();
+            const filtered = ASSETS[currentTab].filter(a => a.symbol.toLowerCase().includes(query));
+            renderAssetCards(filtered);
+        }
+
+        /* LIVE PRICE SIMULATOR */
+        function simulatePriceUpdates() {
+            document.querySelectorAll('.asset-price-val').forEach(el => {
+                if (Math.random() > 0.6) {
+                    let currentVal = parseFloat(el.textContent);
+                    let delta = (Math.random() - 0.48) * (currentVal * 0.001);
+                    el.textContent = (currentVal + delta).toFixed(currentVal > 100 ? 2 : 4);
+                }
+            });
+        }
+
+        /* MODAL CONTROLS */
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        /* CHART MODAL & CANVAS RENDERING */
+        function openChartModal(symbol, price) {
+            activeSymbol = symbol;
+            document.getElementById('modalSymbolTitle').textContent = symbol;
+            document.getElementById('modalAssetPrice').textContent = price;
+            openModal('chartModal');
+            recalculateSignal();
+            renderCanvasChart();
+        }
+
+        function setTimeframe(tf) {
+            activeTimeframe = tf;
+            document.getElementById('signalTimeframeBadge').textContent = `TF: ${tf}`;
+            document.querySelectorAll('.tf-btn').forEach(b => {
+                b.className = "tf-btn px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-400";
+            });
+            event.target.className = "tf-btn px-2.5 py-1 rounded-lg bg-cyan-500 text-black font-bold";
+            recalculateSignal();
+            renderCanvasChart();
+        }
+
+        /* RE-CALCULATE DYNAMIC AI SIGNAL */
+        function recalculateSignal() {
+            const outputBox = document.getElementById('signalResultText');
+            const isBuy = Math.random() > 0.45;
+            
+            outputBox.textContent = isBuy ? "STRONG BUY" : "STRONG SELL";
+            outputBox.className = isBuy ? "text-3xl font-black text-emerald-400 neon-text-green tracking-widest" : "text-3xl font-black text-rose-500 neon-text-red tracking-widest";
+            
+            document.getElementById('signalAccuracy').textContent = (86 + Math.random() * 11).toFixed(1) + "%";
+            
+            let basePrice = parseFloat(document.getElementById('modalAssetPrice').textContent) || 100;
+            document.getElementById('signalEntry').textContent = basePrice;
+            document.getElementById('signalTP').textContent = (isBuy ? basePrice * 1.012 : basePrice * 0.988).toFixed(4);
+            document.getElementById('signalSL').textContent = (isBuy ? basePrice * 0.993 : basePrice * 1.007).toFixed(4);
+        }
+
+        /* CANVAS CANDLESTICK CHART VISUALIZER */
+        function renderCanvasChart() {
+            const canvas = document.getElementById('tradingChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines
+            ctx.strokeStyle = '#1E293B';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // Draw simulated candles
+            const candleCount = 28;
+            const candleWidth = (canvas.width / candleCount) - 6;
+
+            for (let i = 0; i < candleCount; i++) {
+                const x = i * (candleWidth + 6) + 10;
+                const open = 50 + Math.random() * (canvas.height - 100);
+                const close = open + (Math.random() - 0.48) * 80;
+                const high = Math.min(open, close) - Math.random() * 20;
+                const low = Math.max(open, close) + Math.random() * 20;
+                const isBull = close < open;
+
+                ctx.strokeStyle = isBull ? '#22C55E' : '#EF4444';
+                ctx.fillStyle = isBull ? '#22C55E' : '#EF4444';
+
+                // Wick
+                ctx.beginPath();
+                ctx.moveTo(x + candleWidth / 2, high);
+                ctx.lineTo(x + candleWidth / 2, low);
+                ctx.stroke();
+
+                // Body
+                ctx.fillRect(x, Math.min(open, close), candleWidth, Math.abs(close - open) || 2);
+            }
+        }
+
+        /* GAMIFIED SPIN WHEEL CANVAS */
+        function drawSpinWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            const ctx = canvas.getContext('2d');
+            const segments = ['FREE 12H', '$5 PKG', 'FREE 12H', '$20 PKG', '$5 PKG'];
+            const colors = ['#8B5CF6', '#1E293B', '#10B981', '#1E293B', '#F59E0B'];
+
+            const angle = (2 * Math.PI) / segments.length;
+
+            for (let i = 0; i < segments.length; i++) {
+                ctx.beginPath();
+                ctx.fillStyle = colors[i];
+                ctx.moveTo(125, 125);
+                ctx.arc(125, 125, 120, i * angle, (i + 1) * angle);
+                ctx.fill();
+                ctx.stroke();
+
+                // Labels
+                ctx.save();
+                ctx.translate(125, 125);
+                ctx.rotate(i * angle + angle / 2);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(segments[i], 50, 5);
+                ctx.restore();
+            }
+        }
+
+        function spinWheel() {
+            const wheel = document.getElementById('wheelCanvas');
+            const randomDegrees = 1800 + Math.floor(Math.random() * 360);
+            wheel.style.transform = `rotate(${randomDegrees}deg)`;
+
+            document.getElementById('spinBtn').disabled = true;
+
+            setTimeout(() => {
+                const res = document.getElementById('spinResult');
+                res.classList.remove('hidden');
+                res.innerHTML = "🎉 CONGRATULATIONS! You won a <strong>12-Hour Free License Key</strong>!<br><span class='text-cyan-400 font-mono'>KEY: SOLANGI-12H-FREE-PASS</span>";
+                document.getElementById('userLicenseType').textContent = "12-Hour Free Pass";
+            }, 4000);
+        }
+
+        /* FOUNDER VIP MODE TOGGLE */
+        function toggleFounderMode() {
+            isFounder = !isFounder;
+            document.getElementById('founderStatus').textContent = isFounder ? "ON (VIP)" : "OFF";
+            document.getElementById('founderStatus').className = isFounder ? "text-emerald-400 font-bold animate-pulse" : "text-rose-400";
+            document.getElementById('userLicenseType').textContent = isFounder ? "FOUNDER UNLIMITED" : "Free Pass";
+            alert(isFounder ? "Founder VIP Mode Enabled! All subscription gates bypassed." : "Founder Mode Disabled.");
+        }
+
+        /* PAYMENT SELECTION */
+        function selectPackage(pkg) {
+            selectedPackage = pkg;
+            document.getElementById('pkg-weekly').className = pkg === 'weekly' ? "glass-card p-4 rounded-xl border-2 border-cyan-500 cursor-pointer relative space-y-2" : "glass-card p-4 rounded-xl border-2 border-slate-800 cursor-pointer relative space-y-2";
+            document.getElementById('pkg-monthly').className = pkg === 'monthly' ? "glass-card p-4 rounded-xl border-2 border-amber-500 cursor-pointer relative space-y-2" : "glass-card p-4 rounded-xl border-2 border-slate-800 cursor-pointer relative space-y-2";
+        }
+
+        function selectGateway(gw) {
+            selectedGateway = gw;
+            alert(`Selected Gateway: ${gw}`);
+        }
+
+        function processPayment() {
+            alert(`Redirecting to ${selectedGateway} gateway for ${selectedPackage} package. License key will be auto-transferred.`);
+            closeModal('paymentModal');
+            document.getElementById('userLicenseType').textContent = `${selectedPackage.toUpperCase()} VIP PASS`;
+        }
+
+        /* AI AGENT CHAT ASSISTANT */
+        function toggleAiChat() {
+            document.getElementById('aiChatWindow').classList.toggle('hidden');
+        }
+
+        function handleAiQuery(e) {
+            e.preventDefault();
+            const input = document.getElementById('aiInput');
+            const log = document.getElementById('chatLog');
+            if (!input.value.trim()) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = "bg-cyan-500/10 border border-cyan-500/20 p-2.5 rounded-xl text-cyan-300 ml-6 text-right";
+            userMsg.textContent = input.value;
+            log.appendChild(userMsg);
+
+            const query = input.value.toLowerCase();
+            input.value = '';
+
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.className = "bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-slate-300 mr-6";
+                
+                if (query.includes('buy') || query.includes('sell') || query.includes('signal')) {
+                    aiMsg.innerHTML = "🤖 <strong>Solangi AI:</strong> Current high-probability signals show bullish momentum on BTC/USD and XAU/USD. Always follow tight Stop Loss limits!";
+                } else if (query.includes('pay') || query.includes('package') || query.includes('price')) {
+                    aiMsg.innerHTML = "🤖 <strong>Solangi AI:</strong> We offer $5 Weekly and $20 Monthly passes with instant license activation via JazzCash, EasyPaisa, or PayPal.";
+                } else {
+                    aiMsg.innerHTML = "🤖 <strong>Solangi AI:</strong> I am here to help you optimize your trades with Solangi FX signals. How can I assist you further?";
+                }
+                log.appendChild(aiMsg);
+                log.scrollTop = log.scrollHeight;
+            }, 600);
+        }
+    </script>
+</body>
+</html>
